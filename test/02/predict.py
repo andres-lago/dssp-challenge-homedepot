@@ -1,3 +1,4 @@
+import argparse
 from pyspark import SparkContext
 import pyspark
 from pyspark.conf import SparkConf
@@ -9,9 +10,12 @@ from pyspark.mllib.linalg import SparseVector
 from pyspark.ml.linalg import DenseVector
 from pyspark.sql import Row
 from functools import partial
-from pyspark.ml.regression import LinearRegression
+#from pyspark.ml.regression import LinearRegression
 
-
+#from numpy import allclose
+#from pyspark.ml.linalg import Vectors
+from pyspark.ml.regression import RandomForestRegressor
+from pyspark.ml.evaluation import RegressionEvaluator
 
 def fixEncoding(x):
 	# fix encoding in fields name and value
@@ -64,25 +68,81 @@ def newFeatures(row):
 	newRow=newRow(*data.values())
 	return newRow
 
-sc = SparkContext(appName="Example1")
+#
+# MAIN
+#
+
+kRegressorName = "RandomForestRegressor"
+
+# parse args
+parser = argparse.ArgumentParser(description="Predictor HOME DEPOT")
+parser.add_argument("--lightData", action="store_true", default=False, help="[opt] It will use light version of datasets (files in ../data_light)")
+
+args = parser.parse_args()
+
+#arg: lightData
+useLightData = False
+if(args.lightData):
+	useLightData = True
+
+#Spark context
+sc = SparkContext(appName="PredictorHomeDepot")
+
+#Set log level of Spark
+sc.setLogLevel("WARN")
+
+
+print "Current regressor: " + kRegressorName
+
 
 sqlContext = HiveContext(sc)
+print "###############"
+
+# get the current directory
+import os
+
+fileRepartition = 1
+
+trainFileAbsPath = ""
+if(useLightData):
+	cwd = os.getcwd()
+	trainFileAbsPath = "file://" + cwd + "/../data_light/train.csv"
+	fileRepartition = 1
+else:
+	#HDFS
+	trainFileAbsPath = "/dssp/datacamp/train.csv"
+	fileRepartition = 100
+
+
 print "###############"
 #READ data
 data=sqlContext.read.format("com.databricks.spark.csv").\
 	option("header", "true").\
 	option("inferSchema", "true").\
-	load("/dssp/datacamp/train.csv").repartition(100)
-print "data loaded - head:"	
+	load(trainFileAbsPath).repartition(fileRepartition)
+	#load("/dssp/datacamp/train.csv").repartition(100)
+print "data loaded - head:"
 print data.head()
 print "################"
+
+
+attribFileAbsPath = ""
+if(useLightData):
+	cwd = os.getcwd()
+	attribFileAbsPath = "file://" + cwd + "/../data_light/attributes.csv"
+	fileRepartition = 1
+else:
+	#HDFS
+	attribFileAbsPath = "/dssp/datacamp/attributes.csv"
+	fileRepartition = 100
 
 attributes=sqlContext.read.format("com.databricks.spark.csv").\
 	option("header", "true").\
 	option("inferSchema", "true").\
-	load("/dssp/datacamp/attributes.csv").repartition(100)
-	
-print "attributes loaded - head:"	
+	load(attribFileAbsPath).repartition(fileRepartition)
+	#load("/dssp/datacamp/attributes.csv").repartition(100)
+
+print "attributes loaded - head:"
 print attributes.head()
 print "################"
 
@@ -151,13 +211,31 @@ fulldata=fulldata.withColumnRenamed('relevance', 'label').select(['label','featu
 (train,test)=fulldata.rdd.randomSplit([0.8,0.2])
 
 #Initialize regresion model
-lr = LinearRegression(maxIter=10, regParam=0.3, elasticNetParam=0.8)
+#lr = LinearRegression(maxIter=10, regParam=0.3, elasticNetParam=0.8)
+
+rf = RandomForestRegressor(numTrees=300, maxDepth=10, seed=42)
 
 # Fit the model
-lrModel = lr.fit(sqlContext.createDataFrame(train))
+model = rf.fit(sqlContext.createDataFrame(train))
 
 #Apply model to test data
-result=lrModel.transform(sqlContext.createDataFrame(test))
+result = model.transform(sqlContext.createDataFrame(test))
+
 #Compute mean squared error metric
-MSE = result.rdd.map(lambda r: (r['label'] - r['prediction'])**2).mean()
-print("Mean Squared Error = " + str(MSE))
+#MSE = result.rdd.map(lambda r: (r['label'] - r['prediction'])**2).mean()
+#print("ORIG-Mean Squared Error = " + str(MSE))
+
+# Select (prediction, true label) and compute test error
+#evaluator = RegressionEvaluator(
+#    labelCol="label", predictionCol="prediction", metricName="rmse")
+#rmse = evaluator.evaluate(result)
+#print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+
+evaluator = RegressionEvaluator(
+    labelCol="label", predictionCol="prediction", metricName="mse")
+mse = evaluator.evaluate(result)
+print("Mean Squared Error (MSE) on test data = %g" % mse)
+
+
+#rfModel = model.stages[1]
+#print(rfModel)  # summary only
