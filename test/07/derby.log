@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Mon Dec 19 15:25:36 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0159-1779-356f-000014200868 
+on database directory /home/datad/Documents/formDSSP-local/tp/dssp-challenge-homedepot-github/test/07/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@23c48882 
+Loaded from file:/opt/spark/spark-2.0.2-bin-hadoop2.7/jars/derby-10.12.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_79-b14
+user.dir=/home/datad/Documents/formDSSP-local/tp/dssp-challenge-homedepot-github/test/07
+os.name=Linux
+os.arch=amd64
+os.version=3.19.0-25-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

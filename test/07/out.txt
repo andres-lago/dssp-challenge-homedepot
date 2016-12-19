@@ -1,0 +1,10 @@
+Current regressor: RandomForestRegressor
+###############
+###############
+Traceback (most recent call last):
+  File "/home/datad/Documents/formDSSP-local/tp/dssp-challenge-homedepot-github/test/07/predict.py", line 296, in <module>
+    load(trainFileAbsPath).repartition(fileRepartition)
+  File "/opt/spark/spark-2.0.2-bin-hadoop2.7/python/lib/pyspark.zip/pyspark/sql/readwriter.py", line 147, in load
+  File "/opt/spark/spark-2.0.2-bin-hadoop2.7/python/lib/py4j-0.10.3-src.zip/py4j/java_gateway.py", line 1133, in __call__
+  File "/opt/spark/spark-2.0.2-bin-hadoop2.7/python/lib/pyspark.zip/pyspark/sql/utils.py", line 69, in deco
+pyspark.sql.utils.AnalysisException: u'Path does not exist: file:/dssp/datacamp/train.csv;'
